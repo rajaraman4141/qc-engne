@@ -1,16 +1,3 @@
-const fallbackSampleAlerts = [
-  {
-    alert_id: "AL-1001",
-    analyst: "Riya",
-    investigation_remarks: "Customer Profile: Customer is a salaried individual with activity broadly aligned to profile, income range, and prior account behavior. Alert Trigger: Multiple credits were reviewed for the alert period due to velocity and value movement. Transaction Review: Credits and debits were compared with historical activity, known employer details, counterparties, narration, and available account history. Red Flags: No material red flags were observed after reviewing account behavior, source pattern, and movement of funds. Disposition: Alert closed. Rationale: Activity is explainable based on customer profile, expected salary credits, routine payments, and available transaction pattern."
-  },
-  {
-    alert_id: "AL-1002",
-    analyst: "Karan",
-    investigation_remarks: "Customer Profile: Trading entity. Alert Trigger: High value txn. Transaction Review: ca showed frequent cash deposits. Disposition: suspicious activity noted."
-  }
-];
-
 const dataInput = document.querySelector("#dataInput");
 const resultsBody = document.querySelector("#resultsBody");
 const resultSummary = document.querySelector("#resultSummary");
@@ -238,7 +225,11 @@ async function loadSampleDataset() {
     const sampleAlerts = parseCsv(csvText);
     dataInput.value = JSON.stringify(sampleAlerts, null, 2);
   } catch {
-    dataInput.value = JSON.stringify(fallbackSampleAlerts, null, 2);
+    dataInput.value = "";
+    resultsBody.innerHTML = `<tr><td colspan="5" class="empty-cell">Sample dataset not found. Add data/sample_alerts.csv.</td></tr>`;
+    resultSummary.textContent = "No sample dataset loaded.";
+    passRate.textContent = "0%";
+    return;
   }
   runQc();
 }

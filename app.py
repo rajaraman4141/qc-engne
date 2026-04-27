@@ -59,38 +59,6 @@ DEFAULT_RULES = {
     "banned_terms": ["suspicious", "ca", "sa", "txn"],
 }
 
-SAMPLE_ALERTS = [
-    AlertRecord(
-        alert_id="AL-1001",
-        analyst="Riya",
-        investigation_remarks=(
-            "Customer Profile: Customer is a salaried individual with activity broadly aligned to "
-            "profile, income range, and prior account behavior. Alert Trigger: Multiple credits "
-            "were reviewed for the alert period due to velocity and value movement. Transaction "
-            "Review: Credits and debits were compared with historical activity, known employer "
-            "details, counterparties, narration, and available account history. Red Flags: No "
-            "material red flags were observed after reviewing account behavior, source pattern, "
-            "and movement of funds. Disposition: Alert closed. Rationale: Activity is explainable "
-            "based on customer profile, expected salary credits, routine payments, and available "
-            "transaction pattern."
-        ),
-        updated_at="2026-04-28T00:00:00",
-        case_status="Closed",
-        risk_level="Medium",
-    ),
-    AlertRecord(
-        alert_id="AL-1002",
-        analyst="Karan",
-        investigation_remarks=(
-            "Customer Profile: Trading entity. Alert Trigger: High value txn. Transaction Review: "
-            "ca showed frequent cash deposits. Disposition: suspicious activity noted."
-        ),
-        updated_at="2026-04-28T00:05:00",
-        case_status="Closed",
-        risk_level="High",
-    ),
-]
-
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS aml_alert_reviews (
   alert_id TEXT PRIMARY KEY,
@@ -291,12 +259,15 @@ def fetch_alerts(db_path: str) -> list[AlertRecord]:
 
 def seed_sample_alerts(db_path: str) -> None:
     sample_csv = ROOT / "data" / "sample_alerts.csv"
-    if sample_csv.exists():
-        alerts = load_alerts_from_csv(sample_csv)
-    else:
-        alerts = SAMPLE_ALERTS
+    if not sample_csv.exists():
+        print("No data/sample_alerts.csv found. Sample seeding skipped.")
+        return
+
+    alerts = load_alerts_from_csv(sample_csv)
 
     with connect(db_path) as connection:
+        connection.execute("DELETE FROM aml_qc_results")
+        connection.execute("DELETE FROM aml_alert_reviews")
         connection.executemany(
             """
             INSERT OR REPLACE INTO aml_alert_reviews (
@@ -505,7 +476,7 @@ def main() -> None:
     print(f"Port: {port}")
 
     init_db(db_path)
-    if os.getenv("AML_QC_SEED_SAMPLE", "true").lower() in {"1", "true", "yes"} and not fetch_alerts(db_path):
+    if os.getenv("AML_QC_SEED_SAMPLE", "true").lower() in {"1", "true", "yes"}:
         seed_sample_alerts(db_path)
 
     server = ThreadingHTTPServer((host, port), make_handler(db_path))

@@ -3,11 +3,12 @@ services:
     name: aml-qc-engine
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python -m aml_qc_engine.cli web --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r requirements.txt && python -m compileall aml_qc_engine
+    startCommand: python app.py
     envVars:
       - key: AML_QC_DB_PATH
         value: data/aml_qc.sqlite3
       - key: AML_QC_SOURCE_TABLE
         value: aml_alert_reviews
-
+      - key: AML_QC_SEED_SAMPLE
+        value: "true"

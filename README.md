@@ -78,7 +78,7 @@ Recommended simple deployment:
 4. Use this start command:
 
 ```text
-python -m aml_qc_engine.cli web --host 0.0.0.0 --port $PORT
+python app.py
 ```
 
 5. Set environment variables in the hosting service:
@@ -86,6 +86,7 @@ python -m aml_qc_engine.cli web --host 0.0.0.0 --port $PORT
 ```text
 AML_QC_DB_PATH=data/aml_qc.sqlite3
 AML_QC_SOURCE_TABLE=aml_alert_reviews
+AML_QC_SEED_SAMPLE=true
 ```
 
 For production, replace the local SQLite database with your real Superset database connector and keep credentials in hosting secrets, not in GitHub.

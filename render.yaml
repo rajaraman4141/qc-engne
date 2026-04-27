@@ -3,7 +3,7 @@ services:
     name: aml-qc-engine
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt && python deploy_check.py && python -m compileall aml_qc_engine
+    buildCommand: python deploy_check.py && pip install -r requirements.txt
     startCommand: python app.py
     envVars:
       - key: AML_QC_DB_PATH

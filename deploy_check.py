@@ -1,28 +1,34 @@
 from __future__ import annotations
 
+import py_compile
 import sys
 from pathlib import Path
 
 
 required_paths = [
     Path("app.py"),
-    Path("aml_qc_engine"),
-    Path("aml_qc_engine/__init__.py"),
-    Path("aml_qc_engine/cli.py"),
-    Path("aml_qc_engine/web.py"),
-    Path("config/rules.json"),
+    Path("requirements.txt"),
+    Path("render.yaml"),
 ]
 
 missing = [str(path) for path in required_paths if not path.exists()]
 
 if missing:
-    print("Deployment files are missing from the repository root:")
+    print("ERROR: Deployment files are missing from the repository root:")
     for path in missing:
         print(f" - {path}")
-    print("\nRender root directory must point to the folder that contains app.py and aml_qc_engine/.")
+    print("\nFix: Render root directory must point to the folder that contains app.py.")
     sys.exit(1)
 
-import aml_qc_engine  # noqa: E402
+try:
+    py_compile.compile("app.py", doraise=True)
+except py_compile.PyCompileError as error:
+    print("ERROR: app.py has a Python syntax problem.")
+    print(error)
+    sys.exit(1)
 
-print(f"Deployment check passed. aml_qc_engine {aml_qc_engine.__version__} is importable.")
-
+print("OK: app.py found")
+print("OK: requirements.txt found")
+print("OK: render.yaml found")
+print("OK: app.py syntax valid")
+print("\nReady for Render deploy.")

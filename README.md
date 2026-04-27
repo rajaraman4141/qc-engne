@@ -67,7 +67,11 @@ Update that file to change the word limits, mandatory template sections, or bann
 
 ## Make It Live With GitHub
 
-GitHub should store the code and run checks. A Python hosting service should run the live app.
+For the easiest hosting path, use:
+
+[HOSTING_EASY_STEPS.md](HOSTING_EASY_STEPS.md)
+
+GitHub should store the code. Render or another Python hosting service should run the live app.
 GitHub Pages cannot run this dashboard because it is a Python backend app.
 
 Recommended simple deployment:
@@ -89,15 +93,13 @@ AML_QC_SOURCE_TABLE=aml_alert_reviews
 AML_QC_SEED_SAMPLE=true
 ```
 
-For production, replace the local SQLite database with your real Superset database connector and keep credentials in hosting secrets, not in GitHub.
-
-If Render says `No module named 'aml_qc_engine'`, your repository root or Render root directory is wrong.
-The live deployment root must contain these paths directly:
+The simple live deployment root must contain these paths directly:
 
 ```text
 app.py
-aml_qc_engine/
-config/
 requirements.txt
 render.yaml
+deploy_check.py
 ```
+
+For production, replace the local SQLite database with your real Superset database connector and keep credentials in hosting secrets, not in GitHub.

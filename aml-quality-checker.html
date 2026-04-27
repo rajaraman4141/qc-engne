@@ -23,7 +23,7 @@
       <section class="data-panel">
         <div class="section-title">
           <h2>Alert Input</h2>
-          <p>Paste Superset or FRM export data as CSV or JSON. Required fields: alert_id, analyst, investigation_remarks.</p>
+          <p>Paste Superset or FRM export data as CSV or JSON. Demo fields include alert_id, L1 agent/remarks, and L2 agent/remarks.</p>
         </div>
         <textarea id="dataInput" spellcheck="false" rows="10"></textarea>
         <div class="actions">
@@ -43,7 +43,8 @@
             <thead>
               <tr>
                 <th>Alert</th>
-                <th>Analyst</th>
+                <th>L1 Review</th>
+                <th>L2 Review</th>
                 <th>Status</th>
                 <th>Score</th>
                 <th>Issues</th>
@@ -51,7 +52,7 @@
             </thead>
             <tbody id="resultsBody">
               <tr>
-                <td colspan="5" class="empty-cell">Paste alert data and run QC.</td>
+                <td colspan="6" class="empty-cell">Paste alert data and run QC.</td>
               </tr>
             </tbody>
           </table>

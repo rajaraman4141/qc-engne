@@ -125,6 +125,10 @@ function checkAlert(alert, rules) {
   return {
     alertId: alert.alert_id || alert.alertid || alert.id || "Missing ID",
     analyst: alert.analyst || alert.user || alert.owner || "N/A",
+    l1Agent: alert.l1_agent || alert.L1_agent || "",
+    l1Remarks: alert.l1_remarks || alert.L1_remarks || "",
+    l2Agent: alert.l2_agent || alert.L2_agent || alert.analyst || "",
+    l2Remarks: alert.l2_remarks || alert.L2_remarks || remarks,
     status,
     score,
     wordCount: count,
@@ -136,7 +140,7 @@ function renderResults(results) {
   latestResults = results;
 
   if (!results.length) {
-    resultsBody.innerHTML = `<tr><td colspan="5" class="empty-cell">No alert records found.</td></tr>`;
+    resultsBody.innerHTML = `<tr><td colspan="6" class="empty-cell">No alert records found.</td></tr>`;
     resultSummary.textContent = "No checks run.";
     passRate.textContent = "0%";
     return;
@@ -154,7 +158,14 @@ function renderResults(results) {
         <strong>${escapeHtml(result.alertId)}</strong><br>
         <span>${result.wordCount} words</span>
       </td>
-      <td>${escapeHtml(result.analyst)}</td>
+      <td>
+        <strong>${escapeHtml(result.l1Agent || "N/A")}</strong><br>
+        <span>${escapeHtml(result.l1Remarks || "No L1 remarks")}</span>
+      </td>
+      <td>
+        <strong>${escapeHtml(result.l2Agent || result.analyst || "N/A")}</strong><br>
+        <span>${escapeHtml(result.l2Remarks || "No L2 remarks")}</span>
+      </td>
       <td><span class="status ${result.status.toLowerCase()}">${result.status}</span></td>
       <td>${result.score}</td>
       <td>
@@ -181,7 +192,7 @@ function runQc() {
     const rules = getRules();
     renderResults(alerts.map((alert) => checkAlert(alert, rules)));
   } catch (error) {
-    resultsBody.innerHTML = `<tr><td colspan="5" class="empty-cell">Unable to parse input. Use CSV headers or JSON records.</td></tr>`;
+    resultsBody.innerHTML = `<tr><td colspan="6" class="empty-cell">Unable to parse input. Use CSV headers or JSON records.</td></tr>`;
     resultSummary.textContent = error.message;
     passRate.textContent = "0%";
   }
@@ -189,10 +200,13 @@ function runQc() {
 
 function exportResults() {
   if (!latestResults.length) runQc();
-  const headers = ["alert_id", "analyst", "status", "score", "word_count", "issues"];
+  const headers = ["alert_id", "l1_agent", "l1_remarks", "l2_agent", "l2_remarks", "status", "score", "word_count", "issues"];
   const rows = latestResults.map((result) => [
     result.alertId,
-    result.analyst,
+    result.l1Agent,
+    result.l1Remarks,
+    result.l2Agent,
+    result.l2Remarks,
     result.status,
     result.score,
     result.wordCount,
@@ -226,7 +240,7 @@ async function loadSampleDataset() {
     dataInput.value = JSON.stringify(sampleAlerts, null, 2);
   } catch {
     dataInput.value = "";
-    resultsBody.innerHTML = `<tr><td colspan="5" class="empty-cell">Sample dataset not found. Add data/sample_alerts.csv.</td></tr>`;
+    resultsBody.innerHTML = `<tr><td colspan="6" class="empty-cell">Sample dataset not found. Add data/sample_alerts.csv.</td></tr>`;
     resultSummary.textContent = "No sample dataset loaded.";
     passRate.textContent = "0%";
     return;

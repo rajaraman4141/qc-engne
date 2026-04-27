@@ -25,6 +25,10 @@ class AlertRecord:
     alert_id: str
     analyst: str
     investigation_remarks: str
+    l1_agent: str = ""
+    l1_remarks: str = ""
+    l2_agent: str = ""
+    l2_remarks: str = ""
     updated_at: str = ""
     case_status: str = ""
     risk_level: str = ""
@@ -63,6 +67,10 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS aml_alert_reviews (
   alert_id TEXT PRIMARY KEY,
   analyst TEXT,
+  l1_agent TEXT,
+  l1_remarks TEXT,
+  l2_agent TEXT,
+  l2_remarks TEXT,
   investigation_remarks TEXT NOT NULL,
   updated_at TEXT,
   case_status TEXT,
@@ -110,9 +118,11 @@ INDEX_HTML = """<!doctype html>
     button { min-height:40px; border:0; border-radius:6px; padding:0 14px; background:var(--accent); color:#fff; font-weight:800; cursor:pointer; }
     button.secondary { background:#eaf5f8; color:#0f4f65; border:1px solid #bfdee7; }
     .table-wrap { overflow-x:auto; }
-    table { width:100%; border-collapse:collapse; min-width:860px; }
+    table { width:100%; border-collapse:collapse; min-width:1180px; }
     th,td { padding:12px; border-top:1px solid var(--line); text-align:left; vertical-align:top; font-size:.9rem; }
     th { color:var(--muted); font-size:.78rem; text-transform:uppercase; background:#f7fafb; }
+    .remarks { max-width:310px; color:#3b4750; line-height:1.4; }
+    .reviewer { display:block; margin-bottom:5px; color:var(--ink); font-weight:800; }
     .status { display:inline-grid; min-width:86px; place-items:center; border-radius:999px; padding:5px 9px; font-size:.78rem; font-weight:900; }
     .Pass { background:#edf8f2; color:var(--ok); }
     .Review { background:#fff6e8; color:var(--warn); }
@@ -146,7 +156,7 @@ INDEX_HTML = """<!doctype html>
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Alert ID</th><th>Analyst</th><th>Status</th><th>Score</th><th>Words</th><th>Issues</th><th>Checked At</th></tr></thead>
+          <thead><tr><th>Alert ID</th><th>L1 Review</th><th>L2 Review</th><th>Status</th><th>Score</th><th>Words</th><th>Issues</th><th>Checked At</th></tr></thead>
           <tbody id="resultsBody"></tbody>
         </table>
       </div>
@@ -167,13 +177,14 @@ INDEX_HTML = """<!doctype html>
     function renderRows(rows) {
       setSummary(rows);
       if (!rows.length) {
-        resultsBody.innerHTML = '<tr><td colspan="7">No QC results yet. Run QC now.</td></tr>';
+        resultsBody.innerHTML = '<tr><td colspan="8">No QC results yet. Run QC now.</td></tr>';
         return;
       }
       resultsBody.innerHTML = rows.map((row) => `
         <tr>
           <td><strong>${escapeHtml(row.alert_id)}</strong></td>
-          <td>${escapeHtml(row.analyst)}</td>
+          <td class="remarks"><span class="reviewer">${escapeHtml(row.l1_agent || "N/A")}</span>${escapeHtml(row.l1_remarks || "No L1 remarks")}</td>
+          <td class="remarks"><span class="reviewer">${escapeHtml(row.l2_agent || row.analyst || "N/A")}</span>${escapeHtml(row.l2_remarks || "No L2 remarks")}</td>
           <td><span class="status ${escapeHtml(row.qc_status)}">${escapeHtml(row.qc_status)}</span></td>
           <td>${escapeHtml(row.qc_score)}</td>
           <td>${escapeHtml(row.word_count)}</td>
@@ -233,13 +244,20 @@ def connect(db_path: str) -> sqlite3.Connection:
 def init_db(db_path: str) -> None:
     with connect(db_path) as connection:
         connection.executescript(SCHEMA)
+        existing = {
+            row["name"] for row in connection.execute("PRAGMA table_info(aml_alert_reviews)").fetchall()
+        }
+        for column in ("l1_agent", "l1_remarks", "l2_agent", "l2_remarks"):
+            if column not in existing:
+                connection.execute(f"ALTER TABLE aml_alert_reviews ADD COLUMN {column} TEXT")
 
 
 def fetch_alerts(db_path: str) -> list[AlertRecord]:
     with connect(db_path) as connection:
         rows = connection.execute(
             """
-            SELECT alert_id, analyst, investigation_remarks, updated_at, case_status, risk_level
+            SELECT alert_id, analyst, l1_agent, l1_remarks, l2_agent, l2_remarks,
+                   investigation_remarks, updated_at, case_status, risk_level
             FROM aml_alert_reviews
             WHERE investigation_remarks IS NOT NULL
             """
@@ -249,6 +267,10 @@ def fetch_alerts(db_path: str) -> list[AlertRecord]:
             alert_id=row["alert_id"] or "",
             analyst=row["analyst"] or "",
             investigation_remarks=row["investigation_remarks"] or "",
+            l1_agent=row["l1_agent"] or "",
+            l1_remarks=row["l1_remarks"] or "",
+            l2_agent=row["l2_agent"] or "",
+            l2_remarks=row["l2_remarks"] or "",
             updated_at=row["updated_at"] or "",
             case_status=row["case_status"] or "",
             risk_level=row["risk_level"] or "",
@@ -271,14 +293,19 @@ def seed_sample_alerts(db_path: str) -> None:
         connection.executemany(
             """
             INSERT OR REPLACE INTO aml_alert_reviews (
-              alert_id, analyst, investigation_remarks, updated_at, case_status, risk_level
+              alert_id, analyst, l1_agent, l1_remarks, l2_agent, l2_remarks,
+              investigation_remarks, updated_at, case_status, risk_level
             )
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 (
                     alert.alert_id,
                     alert.analyst,
+                    alert.l1_agent,
+                    alert.l1_remarks,
+                    alert.l2_agent,
+                    alert.l2_remarks,
                     alert.investigation_remarks,
                     alert.updated_at,
                     alert.case_status,
@@ -296,6 +323,10 @@ def load_alerts_from_csv(path: Path) -> list[AlertRecord]:
             AlertRecord(
                 alert_id=row.get("alert_id", ""),
                 analyst=row.get("analyst", ""),
+                l1_agent=row.get("l1_agent", ""),
+                l1_remarks=row.get("l1_remarks", ""),
+                l2_agent=row.get("l2_agent", ""),
+                l2_remarks=row.get("l2_remarks", ""),
                 investigation_remarks=row.get("investigation_remarks", ""),
                 updated_at=row.get("updated_at", ""),
                 case_status=row.get("case_status", ""),
@@ -387,9 +418,11 @@ def latest_results(db_path: str) -> list[dict]:
     with connect(db_path) as connection:
         rows = connection.execute(
             """
-            SELECT run_id, alert_id, analyst, qc_status, qc_score, word_count, qc_issues, checked_at
-            FROM aml_qc_results
-            ORDER BY id DESC
+            SELECT q.run_id, q.alert_id, q.analyst, q.qc_status, q.qc_score, q.word_count,
+                   q.qc_issues, q.checked_at, a.l1_agent, a.l1_remarks, a.l2_agent, a.l2_remarks
+            FROM aml_qc_results q
+            LEFT JOIN aml_alert_reviews a ON a.alert_id = q.alert_id
+            ORDER BY q.id DESC
             LIMIT 100
             """
         ).fetchall()

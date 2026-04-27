@@ -120,7 +120,11 @@ function checkAlert(alert, rules) {
     return score + 10;
   }, 0);
   const score = Math.max(0, 100 - severityPenalty);
-  const status = issues.length === 0 ? "Pass" : score >= 70 ? "Review" : "Fail";
+  const hasLowWordCount = count < rules.minWords;
+  const hasRestrictedWords = blocked.length > 0;
+  const status = hasLowWordCount || hasRestrictedWords
+    ? "Fail"
+    : issues.length === 0 ? "Pass" : score >= 70 ? "Review" : "Fail";
 
   return {
     alertId: alert.alert_id || alert.alertid || alert.id || "Missing ID",

@@ -50,7 +50,7 @@ class QCResult:
 
 
 DEFAULT_RULES = {
-    "min_words": 80,
+    "min_words": 50,
     "max_words": 250,
     "required_sections": [
         "Customer Profile:",
@@ -60,7 +60,7 @@ DEFAULT_RULES = {
         "Disposition:",
         "Rationale:",
     ],
-    "banned_terms": ["suspicious", "ca", "sa", "txn"],
+    "banned_terms": ["txn", "ca", "sa", "amt"],
 }
 
 EMBEDDED_SAMPLE_ROWS = [
@@ -394,7 +394,8 @@ def evaluate_alert(alert: AlertRecord, rules: dict) -> QCResult:
         issues.append("Missing alert_id")
     if not remarks.strip():
         issues.append("Missing investigation remarks")
-    if count < int(rules["min_words"]):
+    has_low_word_count = count < int(rules["min_words"])
+    if has_low_word_count:
         issues.append(f"Investigation remarks below minimum word limit ({count}/{rules['min_words']})")
     if count > int(rules["max_words"]):
         issues.append(f"Investigation remarks above maximum word limit ({count}/{rules['max_words']})")
@@ -418,7 +419,11 @@ def evaluate_alert(alert: AlertRecord, rules: dict) -> QCResult:
             penalty += 10
 
     score = max(0, 100 - penalty)
-    status = "Pass" if not issues else "Review" if score >= 70 else "Fail"
+    has_restricted_terms = bool(banned)
+    if has_low_word_count or has_restricted_terms:
+        status = "Fail"
+    else:
+        status = "Pass" if not issues else "Review" if score >= 70 else "Fail"
     return QCResult(
         alert_id=alert.alert_id or "Missing ID",
         analyst=alert.analyst or "N/A",

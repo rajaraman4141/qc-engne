@@ -63,6 +63,45 @@ DEFAULT_RULES = {
     "banned_terms": ["suspicious", "ca", "sa", "txn"],
 }
 
+EMBEDDED_SAMPLE_ROWS = [
+    {
+        "alert_id": "R4_12323497_2025-10-04",
+        "analyst": "Raktim Lahkar",
+        "l1_agent": "Kajal Singh",
+        "l1_remarks": "The customer is 24 years old, SALARIED, Income 10L-20L. It was observed that the customer initiated debit to self acc on 3 Oct. Upon further investigation, it has been found that the flagged transactions appear legitimate and hence resolving the alert as false positive.",
+        "l2_agent": "Raktim Lahkar",
+        "l2_remarks": "The customer is salaried. Own savings fund from other bank has been transferred, made debit of fund towards self account for personal requirement. Transactions are mostly associated to customer self account. Transaction appears to be normal and hence the alert is being closed as a false positive.",
+        "investigation_remarks": "The customer is salaried. Own savings fund from other bank has been transferred, made debit of fund towards self account for personal requirement. Transactions are mostly associated to customer self account. Transaction appears to be normal and hence the alert is being closed as a false positive.",
+        "updated_at": "2025-10-16T00:00:00",
+        "case_status": "WHITELIST",
+        "risk_level": "2",
+    },
+    {
+        "alert_id": "R9_12982627_2026-02-23",
+        "analyst": "Mithu Neog",
+        "l1_agent": "Preetam Rohan",
+        "l1_remarks": "Customer Details: Customer is aged 27 years, occupation: SELF_EMPLOYED with an annual income of 20-50L. Account Status: FIXED DEPOSIT(Closed). Transaction Activity: It was observed that customer received credits from TD closure on 22-Feb-2026. Apart from that no saving and current account is observed. Hence, it has been concluded that the flagged transaction is legitimate, and the alert is being resolved as a false positive. EDD Outcome: EDD not required. Conclusion: Hence, no anomalies were identified. Accordingly, the alert is closed as a false positive.",
+        "l2_agent": "Mithu Neog",
+        "l2_remarks": "Customer is aged 27 years, occupation: SELF_EMPLOYED with an annual income of 20-50L. Triggered transaction is related to closure of FD. No unusual patterns were observed in the transaction activity and hence the alert is closed as a false positive.",
+        "investigation_remarks": "Customer is aged 27 years, occupation: SELF_EMPLOYED with an annual income of 20-50L. Triggered transaction is related to closure of FD. No unusual patterns were observed in the transaction activity and hence the alert is closed as a false positive.",
+        "updated_at": "2026-03-05T00:00:00",
+        "case_status": "WHITELIST",
+        "risk_level": "1",
+    },
+    {
+        "alert_id": "R4_11872184_2026-02-22",
+        "analyst": "Biswajit Kundu",
+        "l1_agent": "Harsh Kumar Jha",
+        "l1_remarks": "Customer Details: Customer is aged 67 years, occupation: Retired with an annual income of 1-5L. Account Status: TD Closed. Transaction Activity: TD Closure proceeds were noted. After a thorough review of the overall transactions, it has been concluded that the flagged transaction is legitimate, the activity appears to be Usual. EDD Outcome: Not applicable. Conclusion: Based on the above observations, the transaction activity is consistent with the customer's profile and no red flags were identified; accordingly, the alert is closed as a false positive.",
+        "l2_agent": "Biswajit Kundu",
+        "l2_remarks": "Customer Details: Customer is aged 67 years, occupation: Retired with an annual income of 1-5L. Account Status: TD Closed. Transaction Activity: Noted a TD payout debit BOD Rs 500153.00. After a thorough review of the overall transactions, it has been concluded that the flagged transaction is legitimate, the activity appears to be Usual. EDD Outcome: EDD not required. Conclusion: Based on the above observations, the transaction activity is consistent with the customer's profile and no red flags were identified; accordingly, the alert is closed as a false positive.",
+        "investigation_remarks": "Customer Details: Customer is aged 67 years, occupation: Retired with an annual income of 1-5L. Account Status: TD Closed. Transaction Activity: Noted a TD payout debit BOD Rs 500153.00. After a thorough review of the overall transactions, it has been concluded that the flagged transaction is legitimate, the activity appears to be Usual. EDD Outcome: EDD not required. Conclusion: Based on the above observations, the transaction activity is consistent with the customer's profile and no red flags were identified; accordingly, the alert is closed as a false positive.",
+        "updated_at": "2026-03-05T00:00:00",
+        "case_status": "WHITELIST",
+        "risk_level": "1",
+    },
+]
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS aml_alert_reviews (
   alert_id TEXT PRIMARY KEY,
@@ -281,11 +320,12 @@ def fetch_alerts(db_path: str) -> list[AlertRecord]:
 
 def seed_sample_alerts(db_path: str) -> None:
     sample_csv = ROOT / "data" / "sample_alerts.csv"
-    if not sample_csv.exists():
-        print("No data/sample_alerts.csv found. Sample seeding skipped.")
-        return
-
-    alerts = load_alerts_from_csv(sample_csv)
+    if sample_csv.exists():
+        alerts = load_alerts_from_csv(sample_csv)
+        print(f"Loaded sample dataset from {sample_csv}")
+    else:
+        alerts = [alert_from_mapping(row) for row in EMBEDDED_SAMPLE_ROWS]
+        print("data/sample_alerts.csv not found. Loaded embedded sample records.")
 
     with connect(db_path) as connection:
         connection.execute("DELETE FROM aml_qc_results")
@@ -319,21 +359,22 @@ def seed_sample_alerts(db_path: str) -> None:
 def load_alerts_from_csv(path: Path) -> list[AlertRecord]:
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         rows = csv.DictReader(handle)
-        return [
-            AlertRecord(
-                alert_id=row.get("alert_id", ""),
-                analyst=row.get("analyst", ""),
-                l1_agent=row.get("l1_agent", ""),
-                l1_remarks=row.get("l1_remarks", ""),
-                l2_agent=row.get("l2_agent", ""),
-                l2_remarks=row.get("l2_remarks", ""),
-                investigation_remarks=row.get("investigation_remarks", ""),
-                updated_at=row.get("updated_at", ""),
-                case_status=row.get("case_status", ""),
-                risk_level=row.get("risk_level", ""),
-            )
-            for row in rows
-        ]
+        return [alert_from_mapping(row) for row in rows]
+
+
+def alert_from_mapping(row: dict[str, str]) -> AlertRecord:
+    return AlertRecord(
+        alert_id=row.get("alert_id", ""),
+        analyst=row.get("analyst", ""),
+        l1_agent=row.get("l1_agent", ""),
+        l1_remarks=row.get("l1_remarks", ""),
+        l2_agent=row.get("l2_agent", ""),
+        l2_remarks=row.get("l2_remarks", ""),
+        investigation_remarks=row.get("investigation_remarks", ""),
+        updated_at=row.get("updated_at", ""),
+        case_status=row.get("case_status", ""),
+        risk_level=row.get("risk_level", ""),
+    )
 
 
 def word_count(text: str) -> int:
@@ -511,6 +552,13 @@ def main() -> None:
     init_db(db_path)
     if os.getenv("AML_QC_SEED_SAMPLE", "true").lower() in {"1", "true", "yes"}:
         seed_sample_alerts(db_path)
+
+    if not latest_results(db_path):
+        alerts = fetch_alerts(db_path)
+        if alerts:
+            results = [evaluate_alert(alert, load_rules()) for alert in alerts]
+            save_results(db_path, str(uuid.uuid4()), results)
+            print(f"Auto-ran QC for {len(results)} sample alerts.")
 
     server = ThreadingHTTPServer((host, port), make_handler(db_path))
     print(f"AML QC dashboard running at http://{host}:{port}")

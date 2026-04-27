@@ -7,6 +7,7 @@ import sqlite3
 import sys
 import traceback
 import uuid
+import csv
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -289,6 +290,12 @@ def fetch_alerts(db_path: str) -> list[AlertRecord]:
 
 
 def seed_sample_alerts(db_path: str) -> None:
+    sample_csv = ROOT / "data" / "sample_alerts.csv"
+    if sample_csv.exists():
+        alerts = load_alerts_from_csv(sample_csv)
+    else:
+        alerts = SAMPLE_ALERTS
+
     with connect(db_path) as connection:
         connection.executemany(
             """
@@ -306,9 +313,25 @@ def seed_sample_alerts(db_path: str) -> None:
                     alert.case_status,
                     alert.risk_level,
                 )
-                for alert in SAMPLE_ALERTS
+                for alert in alerts
             ],
         )
+
+
+def load_alerts_from_csv(path: Path) -> list[AlertRecord]:
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        rows = csv.DictReader(handle)
+        return [
+            AlertRecord(
+                alert_id=row.get("alert_id", ""),
+                analyst=row.get("analyst", ""),
+                investigation_remarks=row.get("investigation_remarks", ""),
+                updated_at=row.get("updated_at", ""),
+                case_status=row.get("case_status", ""),
+                risk_level=row.get("risk_level", ""),
+            )
+            for row in rows
+        ]
 
 
 def word_count(text: str) -> int:

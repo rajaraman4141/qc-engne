@@ -100,6 +100,7 @@ app.py
 requirements.txt
 render.yaml
 deploy_check.py
+data/sample_alerts.csv
 ```
 
 For production, replace the local SQLite database with your real Superset database connector and keep credentials in hosting secrets, not in GitHub.

@@ -1,4 +1,4 @@
-const sampleAlerts = [
+const fallbackSampleAlerts = [
   {
     alert_id: "AL-1001",
     analyst: "Riya",
@@ -224,12 +224,23 @@ function exportResults() {
 }
 
 document.querySelector("#loadSample").addEventListener("click", () => {
-  dataInput.value = JSON.stringify(sampleAlerts, null, 2);
-  runQc();
+  loadSampleDataset();
 });
 
 document.querySelector("#runQc").addEventListener("click", runQc);
 document.querySelector("#exportResults").addEventListener("click", exportResults);
 
-dataInput.value = JSON.stringify(sampleAlerts, null, 2);
-runQc();
+async function loadSampleDataset() {
+  try {
+    const response = await fetch("data/sample_alerts.csv", { cache: "no-store" });
+    if (!response.ok) throw new Error("Sample CSV not found");
+    const csvText = await response.text();
+    const sampleAlerts = parseCsv(csvText);
+    dataInput.value = JSON.stringify(sampleAlerts, null, 2);
+  } catch {
+    dataInput.value = JSON.stringify(fallbackSampleAlerts, null, 2);
+  }
+  runQc();
+}
+
+loadSampleDataset();

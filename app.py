@@ -125,7 +125,10 @@ INDEX_HTML = """<!doctype html>
     body { margin:0; background:var(--bg); color:var(--ink); }
     .shell { min-height:100vh; padding:20px; display:grid; gap:18px; }
     header, section { background:var(--panel); border:1px solid var(--line); border-radius:8px; box-shadow:0 18px 50px rgba(23,32,38,.08); }
-    header { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:22px 24px; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:18px 24px; }
+    .brand { display:flex; align-items:center; gap:18px; min-width:0; }
+    .brand-mark { width:150px; max-width:34vw; height:auto; display:block; }
+    .brand-copy { display:grid; gap:3px; min-width:0; }
     h1,h2,p { margin:0; letter-spacing:0; }
     h1 { font-size:1.55rem; }
     h2 { font-size:1rem; }
@@ -151,10 +154,13 @@ INDEX_HTML = """<!doctype html>
 <body>
   <main class="shell">
     <header>
-      <div>
+      <div class="brand">
+        <img class="brand-mark" src="/logo.svg" alt="Slice">
+        <div class="brand-copy">
         <p class="eyebrow">AML QC Engine</p>
         <h1>Investigation Remarks Quality Console</h1>
         <p class="muted">Runs word-limit, template, and restricted-term checks.</p>
+        </div>
       </div>
       <button id="runButton">Run QC Now</button>
     </header>
@@ -226,6 +232,13 @@ INDEX_HTML = """<!doctype html>
   </script>
 </body>
 </html>
+"""
+
+LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" width="640" height="220" viewBox="0 0 640 220" role="img" aria-label="Slice logo">
+  <rect width="640" height="220" rx="24" fill="#ffffff"/>
+  <text x="34" y="158" fill="#8a08d4" font-family="Inter, Arial, sans-serif" font-size="144" font-weight="900" letter-spacing="-4">slice</text>
+  <path d="M252 48h40v40c-22 0-40-18-40-40Z" fill="#8a08d4"/>
+</svg>
 """
 
 
@@ -405,6 +418,15 @@ def make_handler(db_path: str):
 
         def do_GET(self) -> None:
             route = urlparse(self.path).path
+            if route == "/logo.svg":
+                body = LOGO_SVG.encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "image/svg+xml; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
             if route == "/":
                 body = INDEX_HTML.encode("utf-8")
                 self.send_response(200)

@@ -423,7 +423,7 @@ def evaluate_alert(alert: AlertRecord, rules: dict) -> QCResult:
     if has_low_word_count or has_restricted_terms:
         status = "Fail"
     else:
-        status = "Pass" if not issues else "Review" if score >= 70 else "Fail"
+        status = "Pass"
     return QCResult(
         alert_id=alert.alert_id or "Missing ID",
         analyst=alert.analyst or "N/A",

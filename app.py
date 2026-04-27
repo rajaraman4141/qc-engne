@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+import traceback
 from pathlib import Path
 
 
@@ -29,8 +30,15 @@ def main() -> None:
     db_path = database_path()
     rules_path = os.getenv("AML_QC_RULES_PATH", "config/rules.json")
     host = os.getenv("HOST", "0.0.0.0")
-    port = int(os.getenv("PORT", "8000"))
+    port_value = os.getenv("PORT") or "8000"
+    port = int(port_value)
 
+    print("Starting AML QC Engine")
+    print(f"Project root: {ROOT}")
+    print(f"Database path: {db_path}")
+    print(f"Rules path: {rules_path}")
+    print(f"Host: {host}")
+    print(f"Port: {port}")
     load_rule_config(rules_path)
     init_db(db_path)
     maybe_seed_demo_data(db_path)
@@ -38,5 +46,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
-
+    try:
+        main()
+    except Exception:
+        print("AML QC Engine failed during startup.")
+        traceback.print_exc()
+        raise

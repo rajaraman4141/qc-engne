@@ -90,3 +90,14 @@ AML_QC_SEED_SAMPLE=true
 ```
 
 For production, replace the local SQLite database with your real Superset database connector and keep credentials in hosting secrets, not in GitHub.
+
+If Render says `No module named 'aml_qc_engine'`, your repository root or Render root directory is wrong.
+The live deployment root must contain these paths directly:
+
+```text
+app.py
+aml_qc_engine/
+config/
+requirements.txt
+render.yaml
+```

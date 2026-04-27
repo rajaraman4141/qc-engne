@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AML QC Engine</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="engine-shell">
+    <section class="workspace">
+      <header class="app-header">
+        <div>
+          <p class="eyebrow">AML QC Engine</p>
+          <h1>Automated Remarks Quality Check</h1>
+        </div>
+        <div class="run-summary" aria-live="polite">
+          <span id="passRate">0%</span>
+          <small>Pass rate</small>
+        </div>
+      </header>
+
+      <section class="data-panel">
+        <div class="section-title">
+          <h2>Alert Input</h2>
+          <p>Paste Superset or FRM export data as CSV or JSON. Required fields: alert_id, analyst, investigation_remarks.</p>
+        </div>
+        <textarea id="dataInput" spellcheck="false" rows="10"></textarea>
+        <div class="actions">
+          <button id="loadSample" type="button" class="ghost-button">Load Sample</button>
+          <button id="runQc" type="button" class="primary-button">Run QC Check</button>
+          <button id="exportResults" type="button" class="secondary-button">Export Results</button>
+        </div>
+      </section>
+
+      <section class="results-panel">
+        <div class="section-title">
+          <h2>QC Results</h2>
+          <p id="resultSummary">No checks run yet.</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Alert</th>
+                <th>Analyst</th>
+                <th>Status</th>
+                <th>Score</th>
+                <th>Issues</th>
+              </tr>
+            </thead>
+            <tbody id="resultsBody">
+              <tr>
+                <td colspan="5" class="empty-cell">Paste alert data and run QC.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <aside class="rules-panel">
+      <div class="section-title">
+        <h2>Rule Setup</h2>
+        <p>These rules represent the engine layer before sign-off.</p>
+      </div>
+
+      <label>
+        Investigation min words
+        <input id="minWords" type="number" min="1" value="80">
+      </label>
+      <label>
+        Investigation max words
+        <input id="maxWords" type="number" min="1" value="250">
+      </label>
+      <label>
+        Banned words or short forms
+        <textarea id="bannedWords" rows="4">suspicious, ca, sa, txn</textarea>
+      </label>
+      <label>
+        Required template sections
+        <textarea id="templateSections" rows="7">Customer Profile:
+Alert Trigger:
+Transaction Review:
+Red Flags:
+Disposition:
+Rationale:</textarea>
+      </label>
+
+      <div class="rule-note">
+        <strong>Automation path</strong>
+        <p>Superset dataset or SQL output -> QC engine -> failed alerts routed back to FRM / team queue -> QA dashboard.</p>
+      </div>
+    </aside>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

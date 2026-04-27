@@ -1,0 +1,10 @@
+[project]
+name = "aml-qc-engine"
+version = "0.1.0"
+description = "Python AML investigation remarks quality control engine"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.ruff]
+line-length = 100
+

@@ -50,7 +50,7 @@ class QCResult:
 
 
 DEFAULT_RULES = {
-    "min_words": 50,
+    "min_words": 40,
     "max_words": 250,
     "required_sections": [
         "Customer Profile:",

@@ -60,7 +60,7 @@ DEFAULT_RULES = {
         "Disposition:",
         "Rationale:",
     ],
-    "banned_terms": ["txn", "ca", "sa", "amt"],
+    "banned_terms": ["txn", "ca", "sa", "amt","suspicious"],
 }
 
 EMBEDDED_SAMPLE_ROWS = [

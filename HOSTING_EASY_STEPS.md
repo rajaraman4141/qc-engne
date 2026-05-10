@@ -11,7 +11,6 @@ app.py
 requirements.txt
 render.yaml
 deploy_check.py
-data/sample_alerts.csv
 ```
 
 This version can run with only these files.
@@ -88,10 +87,4 @@ Set:
 AML_QC_SEED_SAMPLE=true
 ```
 
-Also confirm this file is in GitHub:
-
-```text
-data/sample_alerts.csv
-```
-
-That file is created from your `sample.xlsx` workbook and is used as the hosted sample dataset.
+The current sample data is embedded directly in `app.py`, so Render does not need a separate sample CSV file.

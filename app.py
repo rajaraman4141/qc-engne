@@ -138,8 +138,18 @@ INDEX_HTML = """<!doctype html>
     th { color:var(--muted); font-size:.78rem; text-transform:uppercase; background:#f7fafb; }
     .remarks { max-width:310px; color:#3b4750; line-height:1.4; }
     .reviewer { display:block; margin-bottom:5px; color:var(--ink); font-weight:800; }
-    .graph-wrap { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:18px; }
-    .chart-box, .matrix-box { padding:18px; }
+    .ops-grid { display:grid; grid-template-columns:1.15fr .85fr; gap:18px; }
+    .ops-panel { padding:18px; overflow:hidden; }
+    .rule-chips { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+    .chip { display:inline-flex; align-items:center; gap:8px; min-height:34px; padding:0 12px; border-radius:999px; background:rgba(138,8,212,.11); color:#43135f; border:1px solid rgba(138,8,212,.18); font-size:.84rem; font-weight:900; }
+    .chip.fail { background:rgba(255,77,94,.11); color:#8f1324; border-color:rgba(255,77,94,.2); }
+    .tool-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:14px; }
+    .tool-card { border:1px solid rgba(138,8,212,.16); background:linear-gradient(135deg,rgba(255,255,255,.8),rgba(245,235,255,.72)); border-radius:10px; padding:14px; }
+    .tool-card strong { display:block; margin-bottom:6px; }
+    .tool-card span { color:var(--muted); font-size:.85rem; line-height:1.35; }
+    .action-stack { display:grid; gap:10px; margin-top:14px; }
+    .action-item { display:grid; grid-template-columns:auto 1fr; gap:10px; padding:12px; border-radius:10px; background:rgba(20,231,255,.09); border:1px solid rgba(20,231,255,.16); }
+    .action-index { display:grid; place-items:center; width:26px; height:26px; border-radius:50%; background:#1e0b35; color:#fff; font-weight:900; }
     .insights { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
     .insight-card { padding:18px; }
     .insight-list { display:grid; gap:10px; margin-top:14px; }
@@ -148,7 +158,6 @@ INDEX_HTML = """<!doctype html>
     .bar-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,#8a08d4,#14e7ff); }
     .filters { display:flex; gap:10px; flex-wrap:wrap; padding:0 18px 16px; }
     .filters input { min-height:40px; min-width:220px; border:1px solid rgba(138,8,212,.28); border-radius:8px; padding:0 12px; background:rgba(255,255,255,.88); font:inherit; font-weight:700; }
-    #performanceChart { width:100%; height:260px; display:block; }
     .matrix-list { display:grid; gap:8px; margin-top:12px; }
     .matrix-row { display:grid; grid-template-columns:1fr 58px; gap:10px; border-top:1px solid var(--line); padding-top:8px; font-size:.84rem; }
     .matrix-row strong { color:var(--ink); }
@@ -157,7 +166,7 @@ INDEX_HTML = """<!doctype html>
     .Pass { background:#edf8f2; color:var(--ok); }
     .Review { background:#fff6e8; color:var(--warn); }
     .Fail { background:#fff0ee; color:var(--fail); }
-    @media (max-width:900px) { .graph-wrap,.insights{grid-template-columns:1fr;} }
+    @media (max-width:900px) { .ops-grid,.insights{grid-template-columns:1fr;} .tool-grid{grid-template-columns:1fr;} }
     @media (max-width:760px) { .shell{padding:10px;} header,.toolbar{align-items:flex-start; flex-direction:column;} .summary{grid-template-columns:1fr 1fr;} }
   </style>
 </head>
@@ -182,15 +191,29 @@ INDEX_HTML = """<!doctype html>
       <div class="metric"><p class="muted">L2 Cases</p><strong id="l2Cases">0</strong></div>
       <div class="metric"><p class="muted">Pass Rate</p><strong id="passRateMetric">0%</strong></div>
     </section>
-    <section class="graph-wrap">
-      <div class="chart-box">
-        <h2>QC Performance Graph</h2>
-        <p class="muted">Pass and fail split by investigation level.</p>
-        <canvas id="performanceChart" width="900" height="260"></canvas>
+    <section class="ops-grid">
+      <div class="ops-panel">
+        <h2>QC Automation Toolkit</h2>
+        <p class="muted">Practical controls you can implement against live FRM/Superset feeds.</p>
+        <div class="rule-chips">
+          <span class="chip fail">Fail if words &lt; 50</span>
+          <span class="chip fail">Fail: txn / ca / sa / amt</span>
+          <span class="chip">L1 matrix: 100 pts</span>
+          <span class="chip">L2 matrix: 100 pts</span>
+          <span class="chip">Analyst report export</span>
+          <span class="chip">Case level audit trail</span>
+        </div>
+        <div class="tool-grid">
+          <div class="tool-card"><strong>1. Data Intake</strong><span>Map FRM artifacts into case_id, review_level, created_by, status, and investigation remarks.</span></div>
+          <div class="tool-card"><strong>2. Rule Engine</strong><span>Apply hard-fail words, word limits, and checklist scoring before QA sign-off.</span></div>
+          <div class="tool-card"><strong>3. Analyst Coaching</strong><span>Use individual L1/L2 reports to identify repeated wording and documentation defects.</span></div>
+          <div class="tool-card"><strong>4. Superset Output</strong><span>Write QC result rows back to a dashboard table for trends and governance reporting.</span></div>
+        </div>
       </div>
-      <div class="matrix-box">
-        <h2>Scoring Matrix</h2>
-        <div class="matrix-list" id="matrixList"></div>
+      <div class="ops-panel">
+        <h2>Next Implementation Actions</h2>
+        <p class="muted">Recommended build path for productionizing this QC layer.</p>
+        <div class="action-stack" id="actionStack"></div>
       </div>
     </section>
     <section class="insights">
@@ -297,6 +320,23 @@ INDEX_HTML = """<!doctype html>
         </div>
       `).join("") : '<p class="muted">No signals yet.</p>';
     }
+    function renderActionStack(rows) {
+      const fails = rows.filter((row) => row.qc_status === "Fail").length;
+      const l1Fails = rows.filter((row) => row.review_level === "L1" && row.qc_status === "Fail").length;
+      const l2Fails = rows.filter((row) => row.review_level === "L2" && row.qc_status === "Fail").length;
+      const actions = [
+        [`Route ${fails} failed cases`, "Send hard-fail cases back to analyst queue with exact QC issue text."],
+        [`Prioritize ${l1Fails} L1 defects`, "Coach L1 reviewers on minimum investigation detail and restricted short forms."],
+        [`Prioritize ${l2Fails} L2 defects`, "Validate L2 disposition quality and escalation rationale before closure."],
+        ["Automate daily export", "Schedule the report endpoint after FRM refresh and publish results to Superset."]
+      ];
+      document.querySelector("#actionStack").innerHTML = actions.map((action, index) => `
+        <div class="action-item">
+          <div class="action-index">${index + 1}</div>
+          <div><strong>${escapeHtml(action[0])}</strong><br><span class="muted">${escapeHtml(action[1])}</span></div>
+        </div>
+      `).join("");
+    }
     function renderInsights(rows) {
       const analystCounts = new Map();
       const issueCounts = new Map();
@@ -314,56 +354,12 @@ INDEX_HTML = """<!doctype html>
       const issues = [...issueCounts.entries()].map(([issue, count]) => ({ issue, count })).sort((a, b) => b.count - a.count).slice(0, 5);
       renderInsightList("#analystSignals", analysts, "name", "count");
       renderInsightList("#issueSignals", issues, "issue", "count");
-    }
-    function drawChart(rows) {
-      const canvas = document.querySelector("#performanceChart");
-      const ctx = canvas.getContext("2d");
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const values = [
-        rows.filter((row) => row.review_level === "L1" && row.qc_status === "Pass").length,
-        rows.filter((row) => row.review_level === "L1" && row.qc_status === "Fail").length,
-        rows.filter((row) => row.review_level === "L2" && row.qc_status === "Pass").length,
-        rows.filter((row) => row.review_level === "L2" && row.qc_status === "Fail").length
-      ];
-      const max = Math.max(1, ...values);
-      const bars = [
-        ["L1 Pass", values[0], "#177245"], ["L1 Fail", values[1], "#b42318"],
-        ["L2 Pass", values[2], "#177245"], ["L2 Fail", values[3], "#b42318"]
-      ];
-      ctx.font = "14px Segoe UI, Arial";
-      bars.forEach((bar, index) => {
-        const x = 72 + index * 190;
-        const h = Math.round((bar[1] / max) * 165);
-        const y = 205 - h;
-        ctx.fillStyle = bar[2];
-        ctx.fillRect(x, y, 82, h);
-        ctx.fillStyle = "#172026";
-        ctx.textAlign = "center";
-        ctx.fillText(String(bar[1]), x + 41, y - 8);
-        ctx.fillStyle = "#66717a";
-        ctx.fillText(bar[0], x + 41, 232);
-      });
-      ctx.strokeStyle = "#dbe3e8";
-      ctx.beginPath();
-      ctx.moveTo(40, 205);
-      ctx.lineTo(850, 205);
-      ctx.stroke();
-    }
-    function renderMatrix() {
-      const container = document.querySelector("#matrixList");
-      container.innerHTML = Object.entries(matrices).map(([level, rows]) => `
-        <div>
-          <strong>${level} Checklist</strong>
-          ${rows.map((row) => `<div class="matrix-row"><span>${escapeHtml(row[0])}</span><strong>${row[1]}</strong></div>`).join("")}
-        </div>
-      `).join("");
+      renderActionStack(rows);
     }
     function renderRows(rows) {
       latestRows = rows;
       const visibleRows = currentFilteredRows();
       setSummary(visibleRows);
-      drawChart(visibleRows);
-      renderMatrix();
       renderInsights(visibleRows);
       populateAnalysts();
       if (!visibleRows.length) {

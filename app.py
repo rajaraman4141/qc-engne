@@ -105,13 +105,14 @@ INDEX_HTML = """<!doctype html>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AML QC Engine</title>
   <style>
-    :root { --bg:#160024; --panel:rgba(255,255,255,.88); --ink:#172026; --muted:#68727d; --line:rgba(255,255,255,.28); --accent:#8a08d4; --ok:#14a66b; --warn:#d68b00; --fail:#ff4d5e; font-family:Inter,"Segoe UI",Arial,sans-serif; }
+    :root { --bg:#130020; --panel:rgba(255,255,255,.84); --panel-dark:rgba(22,8,44,.74); --ink:#172026; --muted:#68727d; --line:rgba(255,255,255,.28); --accent:#8a08d4; --cyan:#14e7ff; --ok:#14a66b; --warn:#d68b00; --fail:#ff4d5e; font-family:Inter,"Segoe UI",Arial,sans-serif; }
     * { box-sizing:border-box; }
     body { margin:0; color:var(--ink); background:linear-gradient(135deg,rgba(17,0,30,.66),rgba(76,0,120,.38)),url("/background.jpg") center/cover fixed no-repeat; }
     body::before { content:""; position:fixed; inset:0; pointer-events:none; background:radial-gradient(circle at 20% 15%,rgba(0,245,255,.18),transparent 28%),linear-gradient(180deg,rgba(14,0,34,.2),rgba(14,0,34,.72)); }
     .shell { min-height:100vh; padding:20px; display:grid; gap:18px; }
     header, section { position:relative; background:var(--panel); border:1px solid var(--line); border-radius:12px; box-shadow:0 22px 70px rgba(0,0,0,.24); backdrop-filter:blur(16px); }
-    header { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:18px 24px; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:18px 24px; overflow:hidden; }
+    header::after { content:""; position:absolute; inset:auto -10% -55% 45%; height:170px; background:radial-gradient(circle,rgba(20,231,255,.42),transparent 62%); filter:blur(12px); }
     .brand { display:flex; align-items:center; gap:18px; min-width:0; }
     .brand-mark { width:150px; max-width:34vw; height:auto; display:block; }
     .brand-copy { display:grid; gap:3px; min-width:0; }
@@ -120,8 +121,9 @@ INDEX_HTML = """<!doctype html>
     h2 { font-size:1rem; }
     .eyebrow { margin-bottom:4px; color:#8a08d4; font-size:.78rem; font-weight:900; text-transform:uppercase; }
     .muted { color:var(--muted); font-size:.88rem; }
-    .summary { display:grid; grid-template-columns:repeat(5,minmax(110px,1fr)); gap:12px; }
-    .metric { padding:16px; }
+    .summary { display:grid; grid-template-columns:repeat(6,minmax(110px,1fr)); gap:12px; }
+    .metric { padding:16px; overflow:hidden; }
+    .metric::before { content:""; display:block; width:34px; height:3px; border-radius:99px; background:linear-gradient(90deg,var(--accent),var(--cyan)); }
     .metric strong { display:block; margin-top:8px; font-size:1.65rem; }
     .toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:16px 18px; }
     .toolbar-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
@@ -136,8 +138,16 @@ INDEX_HTML = """<!doctype html>
     th { color:var(--muted); font-size:.78rem; text-transform:uppercase; background:#f7fafb; }
     .remarks { max-width:310px; color:#3b4750; line-height:1.4; }
     .reviewer { display:block; margin-bottom:5px; color:var(--ink); font-weight:800; }
-    .graph-wrap { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:18px; }
+    .graph-wrap { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:18px; }
     .chart-box, .matrix-box { padding:18px; }
+    .insights { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+    .insight-card { padding:18px; }
+    .insight-list { display:grid; gap:10px; margin-top:14px; }
+    .insight-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; }
+    .bar-track { grid-column:1/-1; height:8px; border-radius:99px; background:rgba(138,8,212,.12); overflow:hidden; }
+    .bar-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,#8a08d4,#14e7ff); }
+    .filters { display:flex; gap:10px; flex-wrap:wrap; padding:0 18px 16px; }
+    .filters input { min-height:40px; min-width:220px; border:1px solid rgba(138,8,212,.28); border-radius:8px; padding:0 12px; background:rgba(255,255,255,.88); font:inherit; font-weight:700; }
     #performanceChart { width:100%; height:260px; display:block; }
     .matrix-list { display:grid; gap:8px; margin-top:12px; }
     .matrix-row { display:grid; grid-template-columns:1fr 58px; gap:10px; border-top:1px solid var(--line); padding-top:8px; font-size:.84rem; }
@@ -147,7 +157,7 @@ INDEX_HTML = """<!doctype html>
     .Pass { background:#edf8f2; color:var(--ok); }
     .Review { background:#fff6e8; color:var(--warn); }
     .Fail { background:#fff0ee; color:var(--fail); }
-    @media (max-width:900px) { .graph-wrap{grid-template-columns:1fr;} }
+    @media (max-width:900px) { .graph-wrap,.insights{grid-template-columns:1fr;} }
     @media (max-width:760px) { .shell{padding:10px;} header,.toolbar{align-items:flex-start; flex-direction:column;} .summary{grid-template-columns:1fr 1fr;} }
   </style>
 </head>
@@ -170,6 +180,7 @@ INDEX_HTML = """<!doctype html>
       <div class="metric"><p class="muted">Failed</p><strong id="failed">0</strong></div>
       <div class="metric"><p class="muted">L1 Cases</p><strong id="l1Cases">0</strong></div>
       <div class="metric"><p class="muted">L2 Cases</p><strong id="l2Cases">0</strong></div>
+      <div class="metric"><p class="muted">Pass Rate</p><strong id="passRateMetric">0%</strong></div>
     </section>
     <section class="graph-wrap">
       <div class="chart-box">
@@ -180,6 +191,18 @@ INDEX_HTML = """<!doctype html>
       <div class="matrix-box">
         <h2>Scoring Matrix</h2>
         <div class="matrix-list" id="matrixList"></div>
+      </div>
+    </section>
+    <section class="insights">
+      <div class="insight-card">
+        <h2>Analyst Performance Signals</h2>
+        <p class="muted">Highest fail counts across L1 and L2 analysts.</p>
+        <div class="insight-list" id="analystSignals"></div>
+      </div>
+      <div class="insight-card">
+        <h2>QC Failure Drivers</h2>
+        <p class="muted">Most common rule breaches in the current dataset.</p>
+        <div class="insight-list" id="issueSignals"></div>
       </div>
     </section>
     <section>
@@ -201,6 +224,19 @@ INDEX_HTML = """<!doctype html>
           <button class="secondary" id="downloadReport">Download</button>
           <button class="secondary" id="refreshButton">Refresh</button>
         </div>
+      </div>
+      <div class="filters">
+        <input id="tableSearch" type="search" placeholder="Search case, analyst, remarks">
+        <select id="statusFilter" aria-label="Status filter">
+          <option value="">All Status</option>
+          <option value="Pass">Pass</option>
+          <option value="Fail">Fail</option>
+        </select>
+        <select id="levelFilter" aria-label="Level filter">
+          <option value="">All Levels</option>
+          <option value="L1">L1</option>
+          <option value="L2">L2</option>
+        </select>
       </div>
       <div class="table-wrap">
         <table>
@@ -233,10 +269,51 @@ INDEX_HTML = """<!doctype html>
     }
     function setSummary(rows) {
       document.querySelector("#checked").textContent = rows.length;
-      document.querySelector("#passed").textContent = rows.filter((row) => row.qc_status === "Pass").length;
-      document.querySelector("#failed").textContent = rows.filter((row) => row.qc_status === "Fail").length;
+      const passed = rows.filter((row) => row.qc_status === "Pass").length;
+      const failed = rows.filter((row) => row.qc_status === "Fail").length;
+      document.querySelector("#passed").textContent = passed;
+      document.querySelector("#failed").textContent = failed;
       document.querySelector("#l1Cases").textContent = rows.filter((row) => row.review_level === "L1").length;
       document.querySelector("#l2Cases").textContent = rows.filter((row) => row.review_level === "L2").length;
+      document.querySelector("#passRateMetric").textContent = rows.length ? `${Math.round((passed / rows.length) * 100)}%` : "0%";
+    }
+    function currentFilteredRows() {
+      const search = document.querySelector("#tableSearch")?.value.toLowerCase().trim() || "";
+      const status = document.querySelector("#statusFilter")?.value || "";
+      const level = document.querySelector("#levelFilter")?.value || "";
+      return latestRows.filter((row) => {
+        const haystack = [row.alert_id, row.review_level, row.l1_agent, row.l1_remarks, row.l2_agent, row.l2_remarks, row.qc_issues].join(" ").toLowerCase();
+        return (!search || haystack.includes(search)) && (!status || row.qc_status === status) && (!level || row.review_level === level);
+      });
+    }
+    function renderInsightList(targetId, rows, labelKey, countKey) {
+      const target = document.querySelector(targetId);
+      const max = Math.max(1, ...rows.map((row) => row[countKey]));
+      target.innerHTML = rows.length ? rows.map((row) => `
+        <div class="insight-row">
+          <strong>${escapeHtml(row[labelKey])}</strong>
+          <span>${escapeHtml(row[countKey])}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.round((row[countKey] / max) * 100)}%"></div></div>
+        </div>
+      `).join("") : '<p class="muted">No signals yet.</p>';
+    }
+    function renderInsights(rows) {
+      const analystCounts = new Map();
+      const issueCounts = new Map();
+      rows.forEach((row) => {
+        if (row.qc_status === "Fail") {
+          const analyst = row.review_level === "L1" ? row.l1_agent : row.l2_agent;
+          if (analyst) analystCounts.set(analyst, (analystCounts.get(analyst) || 0) + 1);
+          String(row.qc_issues || "").split("|").map((item) => item.trim()).filter(Boolean).forEach((issue) => {
+            const normalized = issue.split("(")[0].replace(/: .*/, "").trim();
+            issueCounts.set(normalized, (issueCounts.get(normalized) || 0) + 1);
+          });
+        }
+      });
+      const analysts = [...analystCounts.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, 5);
+      const issues = [...issueCounts.entries()].map(([issue, count]) => ({ issue, count })).sort((a, b) => b.count - a.count).slice(0, 5);
+      renderInsightList("#analystSignals", analysts, "name", "count");
+      renderInsightList("#issueSignals", issues, "issue", "count");
     }
     function drawChart(rows) {
       const canvas = document.querySelector("#performanceChart");
@@ -283,15 +360,17 @@ INDEX_HTML = """<!doctype html>
     }
     function renderRows(rows) {
       latestRows = rows;
-      setSummary(rows);
-      drawChart(rows);
+      const visibleRows = currentFilteredRows();
+      setSummary(visibleRows);
+      drawChart(visibleRows);
       renderMatrix();
+      renderInsights(visibleRows);
       populateAnalysts();
-      if (!rows.length) {
+      if (!visibleRows.length) {
         resultsBody.innerHTML = '<tr><td colspan="9">No QC results yet. Run QC now.</td></tr>';
         return;
       }
-      resultsBody.innerHTML = rows.map((row) => `
+      resultsBody.innerHTML = visibleRows.map((row) => `
         <tr>
           <td><strong>${escapeHtml(row.alert_id)}</strong></td>
           <td><strong>${escapeHtml(row.review_level || "N/A")}</strong></td>
@@ -342,6 +421,9 @@ INDEX_HTML = """<!doctype html>
     document.querySelector("#refreshButton").addEventListener("click", loadResults);
     document.querySelector("#downloadReport").addEventListener("click", downloadOverallReport);
     document.querySelector("#reportScope").addEventListener("change", populateAnalysts);
+    document.querySelector("#tableSearch").addEventListener("input", () => renderRows(latestRows));
+    document.querySelector("#statusFilter").addEventListener("change", () => renderRows(latestRows));
+    document.querySelector("#levelFilter").addEventListener("change", () => renderRows(latestRows));
     loadResults();
   </script>
 </body>
